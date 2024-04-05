@@ -7,15 +7,20 @@ import (
 )
 
 type Config struct {
-	Env      string `env:"env"`
-	Server   Server
-	Postgres Postgres
-	Redis    Redis
+	Env             string `env:"env"`
+	Server          Server
+	ExternalCarsApi ExternalCarsApi
+	Postgres        Postgres
+	Redis           Redis
 }
 
 type Server struct {
 	Host string `env:"SERVER_HOST" env-default:"localhost"`
 	Port string `env:"SERVER_PORT" env-default:"3000"`
+}
+
+type ExternalCarsApi struct {
+	URL string `env:"EXTERNAL_CARS_API_URL" env-default:"http://localhost:3009"`
 }
 
 type Postgres struct {

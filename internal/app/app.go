@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"github.com/Verce11o/effective-mobile-test/cmd/carinfo"
 	"github.com/Verce11o/effective-mobile-test/internal/config"
 	"github.com/Verce11o/effective-mobile-test/internal/lib/postgres"
 	"github.com/Verce11o/effective-mobile-test/internal/lib/redis"
@@ -25,8 +26,15 @@ func Run(log *zap.SugaredLogger, cfg *config.Config) {
 	srv := server.NewServer(log, db, cfg)
 
 	go func() {
+		if err := carinfo.Run(log, "localhost:3009"); err != nil {
+			log.Fatalf("error while start carinfo server: %v", err)
+		}
+		log.Infof("External CarInfo api running on: %v", cfg.ExternalCarsApi.URL)
+	}()
+
+	go func() {
 		if err := srv.Run(srv.InitRoutes()); err != nil {
-			log.Fatalf("Error while start server: %v", err)
+			log.Fatalf("error while start server: %v", err)
 		}
 	}()
 

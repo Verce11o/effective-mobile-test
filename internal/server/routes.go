@@ -52,7 +52,7 @@ func (s *Server) InitRoutes() *gin.Engine {
 	}))
 
 	carRepo := repository.NewCarRepository(s.db)
-	carService := service.NewService(s.log, carRepo)
+	carService := service.NewService(s.log, carRepo, s.cfg.ExternalCarsApi.URL)
 	carHandler := handler.NewHandler(s.log, carService)
 
 	api := router.Group("/api/v1")

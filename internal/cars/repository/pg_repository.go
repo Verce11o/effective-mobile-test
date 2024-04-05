@@ -15,7 +15,7 @@ func NewCarRepository(db *pgxpool.Pool) *CarRepository {
 	return &CarRepository{db: db}
 }
 
-func (c *CarRepository) CreateCar(ctx context.Context, input domain.CreateCarsRequest) error {
+func (c *CarRepository) CreateCars(ctx context.Context, input []domain.Car) error {
 
 	tx, err := c.db.Begin(ctx)
 
@@ -25,8 +25,14 @@ func (c *CarRepository) CreateCar(ctx context.Context, input domain.CreateCarsRe
 
 	defer tx.Rollback(ctx)
 
-	for _, regNum := range input.RegNums {
-		_, err = tx.Exec(ctx, "INSERT INTO cars (reg_num) VALUES ($1)", regNum)
+	for _, car := range input {
+		var ownerID int
+		row := tx.QueryRow(ctx, "INSERT INTO owners (name, surname, patronymic) VALUES ($1, $2, $3) RETURNING id", car.Owner.Name, car.Owner.Surname, car.Owner.Patronymic)
+
+		if err := row.Scan(&ownerID); err != nil {
+			return err
+		}
+		_, err = tx.Exec(ctx, "INSERT INTO cars (reg_num, mark, model, ownerid) VALUES ($1, $2, $3, $4)", car.RegNum, car.Mark, car.Model, ownerID)
 		if err != nil {
 			return err
 		}

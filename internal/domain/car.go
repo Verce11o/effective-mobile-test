@@ -15,6 +15,13 @@ type GetCarsRequest struct {
 	OwnerID int    `form:"owner_id"`
 }
 
+type UpdateCarsRequest struct {
+	RegNum string `json:"regNum"`
+	Mark   string `json:"mark"`
+	Model  string `json:"model"`
+	Year   int    `json:"year"`
+}
+
 type Car struct {
 	Mark   string `json:"mark"`
 	Model  string `json:"model"`

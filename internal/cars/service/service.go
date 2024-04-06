@@ -13,6 +13,7 @@ import (
 type Repository interface {
 	CreateCars(ctx context.Context, cars []domain.Car) error
 	GetCars(ctx context.Context, input domain.GetCarsRequest) (domain.CarList, error)
+	UpdateCar(ctx context.Context, carID int, input domain.UpdateCarsRequest) error
 }
 
 type Service struct {
@@ -83,4 +84,14 @@ func (s *Service) GetCars(ctx context.Context, input domain.GetCarsRequest) (dom
 
 	return carList, nil
 
+}
+
+func (s *Service) UpdateCar(ctx context.Context, carID int, input domain.UpdateCarsRequest) error {
+
+	err := s.repo.UpdateCar(ctx, carID, input)
+	if err != nil {
+		return fmt.Errorf("update car: %w", err)
+	}
+
+	return nil
 }

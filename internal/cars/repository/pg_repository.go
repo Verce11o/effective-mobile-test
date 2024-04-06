@@ -134,3 +134,27 @@ func (c *CarRepository) GetCars(ctx context.Context, input domain.GetCarsRequest
 		Total:  len(cars),
 	}, nil
 }
+
+func (c *CarRepository) UpdateCar(ctx context.Context, carID int, input domain.UpdateCarsRequest) error {
+
+	tx, err := c.db.Begin(ctx)
+
+	if err != nil {
+		return fmt.Errorf("error begin transaction: %w", err)
+	}
+
+	defer tx.Rollback(ctx)
+
+	q := `UPDATE cars SET reg_num = COALESCE(NULLIF($1, ''), reg_num),
+                mark = COALESCE(NULLIF($2, ''), mark),
+				model = COALESCE(NULLIF($3, ''), model), 
+				year = COALESCE(NULLIF($4, 0), year) WHERE id = $5`
+
+	_, err = tx.Exec(ctx, q, input.RegNum, input.Mark, input.Model, input.Year, carID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
+
+}

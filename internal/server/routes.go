@@ -62,6 +62,7 @@ func (s *Server) InitRoutes() *gin.Engine {
 		cars.POST("", carHandler.CreateCar)
 		cars.GET("", carHandler.GetCars)
 		cars.PUT("", carHandler.UpdateCar)
+		cars.DELETE("", carHandler.DeleteCar)
 	}
 
 	return router

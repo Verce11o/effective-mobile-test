@@ -7,6 +7,7 @@ import (
 	"github.com/Verce11o/effective-mobile-test/internal/domain"
 	"github.com/Verce11o/effective-mobile-test/internal/lib/pagination"
 	"github.com/Verce11o/effective-mobile-test/internal/models"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"time"
 )
@@ -157,4 +158,28 @@ func (c *CarRepository) UpdateCar(ctx context.Context, carID int, input domain.U
 
 	return tx.Commit(ctx)
 
+}
+
+func (c *CarRepository) DeleteCar(ctx context.Context, carID int) error {
+
+	tx, err := c.db.Begin(ctx)
+	defer tx.Rollback(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	q := "DELETE FROM cars WHERE id = $1"
+
+	tag, err := tx.Exec(ctx, q, carID)
+
+	if err != nil {
+		return err
+	}
+
+	if tag.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+
+	return tx.Commit(ctx)
 }

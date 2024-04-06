@@ -14,6 +14,7 @@ type Repository interface {
 	CreateCars(ctx context.Context, cars []domain.Car) error
 	GetCars(ctx context.Context, input domain.GetCarsRequest) (domain.CarList, error)
 	UpdateCar(ctx context.Context, carID int, input domain.UpdateCarsRequest) error
+	DeleteCar(ctx context.Context, carID int) error
 }
 
 type Service struct {
@@ -91,6 +92,15 @@ func (s *Service) UpdateCar(ctx context.Context, carID int, input domain.UpdateC
 	err := s.repo.UpdateCar(ctx, carID, input)
 	if err != nil {
 		return fmt.Errorf("update car: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) DeleteCar(ctx context.Context, carID int) error {
+	err := s.repo.DeleteCar(ctx, carID)
+	if err != nil {
+		return fmt.Errorf("delete car: %w", err)
 	}
 
 	return nil

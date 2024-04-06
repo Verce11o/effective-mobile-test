@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/Verce11o/effective-mobile-test/internal/domain"
 	"github.com/Verce11o/effective-mobile-test/internal/lib/request"
+	"github.com/Verce11o/effective-mobile-test/internal/lib/response"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"net/http"
@@ -14,6 +15,7 @@ type Service interface {
 	CreateCar(ctx context.Context, input domain.CreateCarsRequest) error
 	GetCars(ctx context.Context, input domain.GetCarsRequest) (domain.CarList, error)
 	UpdateCar(ctx context.Context, carID int, input domain.UpdateCarsRequest) error
+	DeleteCar(ctx context.Context, carID int) error
 }
 
 type Handler struct {
@@ -37,9 +39,8 @@ func (h *Handler) CreateCar(c *gin.Context) {
 	}
 	err := h.service.CreateCar(c.Request.Context(), input)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "internal server error",
-		})
+		h.log.Infof("error while creating car: %v", err)
+		response.WithHTTPError(c, err)
 		return
 	}
 
@@ -60,10 +61,10 @@ func (h *Handler) GetCars(c *gin.Context) {
 
 	cars, err := h.service.GetCars(c.Request.Context(), input)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "internal server error",
-		})
+		h.log.Infof("error while getting cars: %v", err)
+		response.WithHTTPError(c, err)
 		return
+
 	}
 
 	c.JSON(http.StatusOK, cars)
@@ -98,9 +99,8 @@ func (h *Handler) UpdateCar(c *gin.Context) {
 
 	err = h.service.UpdateCar(c.Request.Context(), carID, input)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "internal server error",
-		})
+		h.log.Infof("error while updating car %v: %v", carID, err)
+		response.WithHTTPError(c, err)
 		return
 	}
 
@@ -108,4 +108,34 @@ func (h *Handler) UpdateCar(c *gin.Context) {
 		"message": "success",
 	})
 
+}
+
+func (h *Handler) DeleteCar(c *gin.Context) {
+	id := c.Query("id")
+
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "id param is required",
+		})
+		return
+	}
+
+	carID, err := strconv.Atoi(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "id must be integer",
+		})
+		return
+	}
+
+	err = h.service.DeleteCar(c.Request.Context(), carID)
+	if err != nil {
+		h.log.Infof("error while deleting car %v: %v", carID, err)
+		response.WithHTTPError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "success",
+	})
 }

@@ -11,6 +11,7 @@ import (
 
 type Service interface {
 	CreateCar(ctx context.Context, input domain.CreateCarsRequest) error
+	GetCars(ctx context.Context, input domain.GetCarsRequest) (domain.CarList, error)
 }
 
 type Handler struct {
@@ -43,4 +44,26 @@ func (h *Handler) CreateCar(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "success",
 	})
+}
+
+func (h *Handler) GetCars(c *gin.Context) {
+	var input domain.GetCarsRequest
+
+	if err := c.ShouldBind(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "invalid request",
+		})
+		return
+	}
+
+	cars, err := h.service.GetCars(c.Request.Context(), input)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "internal server error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, cars)
+
 }

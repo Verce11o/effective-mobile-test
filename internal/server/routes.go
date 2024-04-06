@@ -60,6 +60,7 @@ func (s *Server) InitRoutes() *gin.Engine {
 	cars := api.Group("/cars")
 	{
 		cars.POST("", carHandler.CreateCar)
+		cars.GET("", carHandler.GetCars)
 	}
 
 	return router

@@ -12,6 +12,11 @@ type Config struct {
 	ExternalCarsApi ExternalCarsApi
 	Postgres        Postgres
 	Redis           Redis
+	Jaeger          Jaeger
+}
+
+type Jaeger struct {
+	Endpoint string `env:"JAEGER_ENDPOINT"`
 }
 
 type Server struct {

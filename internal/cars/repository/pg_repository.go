@@ -9,6 +9,7 @@ import (
 	"github.com/Verce11o/effective-mobile-test/internal/models"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel/trace"
 )
 
 const (
@@ -16,14 +17,17 @@ const (
 )
 
 type CarRepository struct {
-	db *pgxpool.Pool
+	db     *pgxpool.Pool
+	tracer trace.Tracer
 }
 
-func NewCarRepository(db *pgxpool.Pool) *CarRepository {
-	return &CarRepository{db: db}
+func NewCarRepository(db *pgxpool.Pool, tracer trace.Tracer) *CarRepository {
+	return &CarRepository{db: db, tracer: tracer}
 }
 
 func (c *CarRepository) CreateCars(ctx context.Context, input []domain.Car) error {
+	ctx, span := c.tracer.Start(ctx, "carRepository.CreateCars")
+	defer span.End()
 
 	tx, err := c.db.Begin(ctx)
 
@@ -49,7 +53,9 @@ func (c *CarRepository) CreateCars(ctx context.Context, input []domain.Car) erro
 	return tx.Commit(ctx)
 }
 
-func (c *CarRepository) GetCars(ctx context.Context, input domain.GetCarsRequest) (domain.CarList, error) {
+func (c *CarRepository) GetCars(ctx context.Context, input domain.GetCarsRequest) (models.CarList, error) {
+	ctx, span := c.tracer.Start(ctx, "carRepository.GetCars")
+	defer span.End()
 
 	var id int
 	var err error
@@ -58,7 +64,7 @@ func (c *CarRepository) GetCars(ctx context.Context, input domain.GetCarsRequest
 		id, err = pagination.DecodeCursor(input.Cursor)
 
 		if err != nil {
-			return domain.CarList{}, err
+			return models.CarList{}, err
 		}
 	}
 
@@ -93,12 +99,12 @@ func (c *CarRepository) GetCars(ctx context.Context, input domain.GetCarsRequest
 	sql, args, err := query.PlaceholderFormat(sq.Dollar).ToSql()
 
 	if err != nil {
-		return domain.CarList{}, err
+		return models.CarList{}, err
 	}
 
 	rows, err := c.db.Query(ctx, sql, args...)
 	if err != nil {
-		return domain.CarList{}, err
+		return models.CarList{}, err
 	}
 
 	defer rows.Close()
@@ -110,7 +116,7 @@ func (c *CarRepository) GetCars(ctx context.Context, input domain.GetCarsRequest
 
 		err = rows.Scan(&car.ID, &car.RegNum, &car.Mark, &car.Model, &car.Year, &car.CreatedAt, &car.Owner.ID, &car.Owner.Name, &car.Owner.Surname, &car.Owner.Patronymic)
 		if err != nil {
-			return domain.CarList{}, err
+			return models.CarList{}, err
 		}
 
 		cars = append(cars, car)
@@ -124,7 +130,7 @@ func (c *CarRepository) GetCars(ctx context.Context, input domain.GetCarsRequest
 		nextCursor = pagination.EncodeCursor(last.ID)
 
 	}
-	return domain.CarList{
+	return models.CarList{
 		Cursor: nextCursor,
 		Cars:   cars,
 		Total:  len(cars),
@@ -132,6 +138,8 @@ func (c *CarRepository) GetCars(ctx context.Context, input domain.GetCarsRequest
 }
 
 func (c *CarRepository) UpdateCar(ctx context.Context, carID int, input domain.UpdateCarsRequest) error {
+	ctx, span := c.tracer.Start(ctx, "carRepository.UpdateCar")
+	defer span.End()
 
 	tx, err := c.db.Begin(ctx)
 
@@ -169,6 +177,8 @@ func (c *CarRepository) UpdateCar(ctx context.Context, carID int, input domain.U
 }
 
 func (c *CarRepository) DeleteCar(ctx context.Context, carID int) error {
+	ctx, span := c.tracer.Start(ctx, "carRepository.DeleteCar")
+	defer span.End()
 
 	tx, err := c.db.Begin(ctx)
 	defer tx.Rollback(ctx)

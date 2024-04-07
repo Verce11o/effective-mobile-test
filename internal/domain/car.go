@@ -1,7 +1,5 @@
 package domain
 
-import "github.com/Verce11o/effective-mobile-test/internal/models"
-
 type CreateCarsRequest struct {
 	RegNums []string `json:"regNums" binding:"required,gt=0"`
 }
@@ -34,10 +32,4 @@ type People struct {
 	Name       string  `json:"name"`
 	Patronymic *string `json:"patronymic,omitempty"`
 	Surname    string  `json:"surname"`
-}
-
-type CarList struct {
-	Cursor string       `json:"cursor"`
-	Total  int          `json:"total"`
-	Cars   []models.Car `json:"cars"`
 }

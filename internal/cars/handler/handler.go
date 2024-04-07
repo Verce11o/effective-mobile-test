@@ -5,7 +5,9 @@ import (
 	"github.com/Verce11o/effective-mobile-test/internal/domain"
 	"github.com/Verce11o/effective-mobile-test/internal/lib/request"
 	"github.com/Verce11o/effective-mobile-test/internal/lib/response"
+	"github.com/Verce11o/effective-mobile-test/internal/models"
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"net/http"
 	"strconv"
@@ -13,7 +15,7 @@ import (
 
 type Service interface {
 	CreateCar(ctx context.Context, input domain.CreateCarsRequest) error
-	GetCars(ctx context.Context, input domain.GetCarsRequest) (domain.CarList, error)
+	GetCars(ctx context.Context, input domain.GetCarsRequest) (models.CarList, error)
 	UpdateCar(ctx context.Context, carID int, input domain.UpdateCarsRequest) error
 	DeleteCar(ctx context.Context, carID int) error
 }
@@ -21,13 +23,16 @@ type Service interface {
 type Handler struct {
 	log     *zap.SugaredLogger
 	service Service
+	tracer  trace.Tracer
 }
 
-func NewHandler(log *zap.SugaredLogger, service Service) *Handler {
-	return &Handler{log: log, service: service}
+func NewHandler(log *zap.SugaredLogger, service Service, tracer trace.Tracer) *Handler {
+	return &Handler{log: log, service: service, tracer: tracer}
 }
 
 func (h *Handler) CreateCar(c *gin.Context) {
+	ctx, span := h.tracer.Start(c.Request.Context(), "carHandler.CreateCar")
+	defer span.End()
 
 	var input domain.CreateCarsRequest
 
@@ -37,8 +42,10 @@ func (h *Handler) CreateCar(c *gin.Context) {
 		})
 		return
 	}
-	err := h.service.CreateCar(c.Request.Context(), input)
+
+	err := h.service.CreateCar(ctx, input)
 	if err != nil {
+
 		h.log.Infof("error while creating car: %v", err)
 		response.WithHTTPError(c, err)
 		return
@@ -50,6 +57,9 @@ func (h *Handler) CreateCar(c *gin.Context) {
 }
 
 func (h *Handler) GetCars(c *gin.Context) {
+	ctx, span := h.tracer.Start(c.Request.Context(), "carHandler.GetCars")
+	defer span.End()
+
 	var input domain.GetCarsRequest
 
 	if err := c.ShouldBind(&input); err != nil {
@@ -59,7 +69,7 @@ func (h *Handler) GetCars(c *gin.Context) {
 		return
 	}
 
-	cars, err := h.service.GetCars(c.Request.Context(), input)
+	cars, err := h.service.GetCars(ctx, input)
 	if err != nil {
 		h.log.Infof("error while getting cars: %v", err)
 		response.WithHTTPError(c, err)
@@ -72,6 +82,9 @@ func (h *Handler) GetCars(c *gin.Context) {
 }
 
 func (h *Handler) UpdateCar(c *gin.Context) {
+	ctx, span := h.tracer.Start(c.Request.Context(), "carHandler.UpdateCar")
+	defer span.End()
+
 	id := c.Query("id")
 
 	if id == "" {
@@ -97,7 +110,7 @@ func (h *Handler) UpdateCar(c *gin.Context) {
 		return
 	}
 
-	err = h.service.UpdateCar(c.Request.Context(), carID, input)
+	err = h.service.UpdateCar(ctx, carID, input)
 	if err != nil {
 		h.log.Infof("error while updating car %v: %v", carID, err)
 		response.WithHTTPError(c, err)
@@ -111,6 +124,9 @@ func (h *Handler) UpdateCar(c *gin.Context) {
 }
 
 func (h *Handler) DeleteCar(c *gin.Context) {
+	ctx, span := h.tracer.Start(c.Request.Context(), "carHandler.DeleteCar")
+	defer span.End()
+
 	id := c.Query("id")
 
 	if id == "" {
@@ -128,7 +144,7 @@ func (h *Handler) DeleteCar(c *gin.Context) {
 		return
 	}
 
-	err = h.service.DeleteCar(c.Request.Context(), carID)
+	err = h.service.DeleteCar(ctx, carID)
 	if err != nil {
 		h.log.Infof("error while deleting car %v: %v", carID, err)
 		response.WithHTTPError(c, err)

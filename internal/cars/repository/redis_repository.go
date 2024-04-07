@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/Verce11o/effective-mobile-test/internal/domain"
+	"github.com/Verce11o/effective-mobile-test/internal/models"
 	"github.com/redis/go-redis/v9"
+	"go.opentelemetry.io/otel/trace"
 	"time"
 )
 
@@ -15,20 +16,24 @@ const (
 
 type CarCacheRepository struct {
 	client *redis.Client
+	tracer trace.Tracer
 }
 
-func NewCarCacheRepository(client *redis.Client) *CarCacheRepository {
-	return &CarCacheRepository{client: client}
+func NewCarCacheRepository(client *redis.Client, tracer trace.Tracer) *CarCacheRepository {
+	return &CarCacheRepository{client: client, tracer: tracer}
 }
 
-func (c *CarCacheRepository) GetCarList(ctx context.Context, cursor string) (*domain.CarList, error) {
-	carListBytes, err := c.client.Get(ctx, c.createKey(cursor)).Bytes()
+func (c *CarCacheRepository) GetCarList(ctx context.Context, hash string) (*models.CarList, error) {
+	ctx, span := c.tracer.Start(ctx, "carRedis.GetCarList")
+	defer span.End()
+
+	carListBytes, err := c.client.Get(ctx, c.createKey(hash)).Bytes()
 
 	if err != nil {
 		return nil, err
 	}
 
-	var carList domain.CarList
+	var carList models.CarList
 
 	if err = json.Unmarshal(carListBytes, &carList); err != nil {
 		return nil, err
@@ -37,20 +42,26 @@ func (c *CarCacheRepository) GetCarList(ctx context.Context, cursor string) (*do
 	return &carList, nil
 }
 
-func (c *CarCacheRepository) SetByIDCtx(ctx context.Context, cursor string, cars domain.CarList) error {
+func (c *CarCacheRepository) SetByIDCtx(ctx context.Context, hash string, cars models.CarList) error {
+	ctx, span := c.tracer.Start(ctx, "carRedis.SetByIDCtx")
+	defer span.End()
+
 	carListBytes, err := json.Marshal(cars)
 
 	if err != nil {
 		return err
 	}
 
-	return c.client.Set(ctx, c.createKey(cursor), carListBytes, time.Second*time.Duration(productTTL)).Err()
+	return c.client.Set(ctx, c.createKey(hash), carListBytes, time.Second*time.Duration(productTTL)).Err()
 }
 
 func (c *CarCacheRepository) DeleteCarList(ctx context.Context) error {
+	ctx, span := c.tracer.Start(ctx, "carRedis.DeleteCarList")
+	defer span.End()
+
 	return c.client.FlushDB(ctx).Err()
 }
 
-func (c *CarCacheRepository) createKey(cursor string) string {
-	return fmt.Sprintf("cars:%s", cursor)
+func (c *CarCacheRepository) createKey(hash string) string {
+	return fmt.Sprintf("cars:%s", hash)
 }

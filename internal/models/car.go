@@ -11,3 +11,9 @@ type Car struct {
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	Owner     People    `json:"owner"`
 }
+
+type CarList struct {
+	Cursor string `json:"cursor"`
+	Total  int    `json:"total"`
+	Cars   []Car  `json:"cars"`
+}

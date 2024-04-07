@@ -6,6 +6,7 @@ import (
 	"github.com/Verce11o/effective-mobile-test/internal/config"
 	"github.com/Verce11o/effective-mobile-test/internal/lib/postgres"
 	"github.com/Verce11o/effective-mobile-test/internal/lib/redis"
+	"github.com/Verce11o/effective-mobile-test/internal/lib/tracer"
 	"github.com/Verce11o/effective-mobile-test/internal/server"
 	"go.uber.org/zap"
 	"os"
@@ -23,7 +24,9 @@ func Run(log *zap.SugaredLogger, cfg *config.Config) {
 	redisClient := redis.NewRedisClient(cfg)
 	defer redisClient.Close()
 
-	srv := server.NewServer(log, db, redisClient, cfg)
+	trace := tracer.InitTracer(ctx, "cars service", cfg.Jaeger.Endpoint)
+
+	srv := server.NewServer(log, db, redisClient, cfg, trace)
 
 	go func() {
 		if err := carinfo.Run(log, "localhost:3009"); err != nil {

@@ -8,6 +8,7 @@ import (
 	"github.com/Verce11o/effective-mobile-test/internal/cars/repository"
 	"github.com/Verce11o/effective-mobile-test/internal/cars/service"
 	"github.com/Verce11o/effective-mobile-test/internal/config"
+	"github.com/Verce11o/effective-mobile-test/internal/lib/tracer"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -21,12 +22,13 @@ type Server struct {
 	log        *zap.SugaredLogger
 	db         *pgxpool.Pool
 	redis      *redis.Client
+	tracer     *tracer.JaegerTracing
 	cfg        *config.Config
 	httpServer *http.Server
 }
 
-func NewServer(log *zap.SugaredLogger, db *pgxpool.Pool, redis *redis.Client, cfg *config.Config) *Server {
-	return &Server{log: log, db: db, redis: redis, cfg: cfg}
+func NewServer(log *zap.SugaredLogger, db *pgxpool.Pool, redis *redis.Client, cfg *config.Config, tracer *tracer.JaegerTracing) *Server {
+	return &Server{log: log, db: db, redis: redis, cfg: cfg, tracer: tracer}
 }
 
 func (s *Server) Run(handler http.Handler) error {
@@ -53,11 +55,11 @@ func (s *Server) InitRoutes() *gin.Engine {
 		AllowCredentials: true,
 	}))
 
-	carRepo := repository.NewCarRepository(s.db)
-	carCache := repository.NewCarCacheRepository(s.redis)
+	carRepo := repository.NewCarRepository(s.db, s.tracer.Tracer)
+	carCache := repository.NewCarCacheRepository(s.redis, s.tracer.Tracer)
 
-	carService := service.NewService(s.log, carRepo, carCache, s.cfg.ExternalCarsApi.URL)
-	carHandler := handler.NewHandler(s.log, carService)
+	carService := service.NewService(s.log, carRepo, carCache, s.tracer.Tracer, s.cfg.ExternalCarsApi.URL)
+	carHandler := handler.NewHandler(s.log, carService, s.tracer.Tracer)
 
 	api := router.Group("/api/v1")
 

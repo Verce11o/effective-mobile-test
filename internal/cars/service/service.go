@@ -6,15 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Verce11o/effective-mobile-test/internal/domain"
-	"github.com/Verce11o/effective-mobile-test/internal/lib/response"
 	"github.com/Verce11o/effective-mobile-test/internal/models"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
-	"net/http"
-	"net/url"
 )
 
+//go:generate go run github.com/vektra/mockery/v2@v2.42.2 --name=Repository
 type Repository interface {
 	CreateCars(ctx context.Context, cars []domain.Car) error
 	GetCars(ctx context.Context, input domain.GetCarsRequest) (models.CarList, error)
@@ -22,29 +20,33 @@ type Repository interface {
 	DeleteCar(ctx context.Context, carID int) error
 }
 
+//go:generate go run github.com/vektra/mockery/v2@v2.42.2 --name=CacheRepository
 type CacheRepository interface {
 	GetCarList(ctx context.Context, hash string) (*models.CarList, error)
 	SetByIDCtx(ctx context.Context, cursor string, cars models.CarList) error
 	DeleteCarList(ctx context.Context) error
 }
 
-type Service struct {
-	log                     *zap.SugaredLogger
-	repo                    Repository
-	cache                   CacheRepository
-	tracer                  trace.Tracer
-	externalCarsApiEndpoint string
+//go:generate go run github.com/vektra/mockery/v2@v2.42.2 --name=ApiCommunicator
+type ApiCommunicator interface {
+	GetCarInfo(regNum string) (domain.Car, error)
 }
 
-func NewService(log *zap.SugaredLogger, repo Repository, cache CacheRepository, tracer trace.Tracer, externalCarsApiEndpoint string) *Service {
-	return &Service{log: log, repo: repo, cache: cache, tracer: tracer, externalCarsApiEndpoint: externalCarsApiEndpoint}
+type Service struct {
+	log          *zap.SugaredLogger
+	repo         Repository
+	cache        CacheRepository
+	tracer       trace.Tracer
+	communicator ApiCommunicator
+}
+
+func NewService(log *zap.SugaredLogger, repo Repository, cache CacheRepository, tracer trace.Tracer, communicator ApiCommunicator) *Service {
+	return &Service{log: log, repo: repo, cache: cache, tracer: tracer, communicator: communicator}
 }
 
 func (s *Service) CreateCar(ctx context.Context, input domain.CreateCarsRequest) error {
 	ctx, span := s.tracer.Start(ctx, "carService.CreateCar")
 	defer span.End()
-
-	client := http.Client{}
 
 	cars := make([]domain.Car, 0, len(input.RegNums))
 
@@ -52,55 +54,10 @@ func (s *Service) CreateCar(ctx context.Context, input domain.CreateCarsRequest)
 
 	for _, regNum := range input.RegNums {
 
-		span.AddEvent("create new request")
-		req, err := http.NewRequest(http.MethodGet, s.externalCarsApiEndpoint+"/info", nil)
+		span.AddEvent("call external api")
 
+		car, err := s.communicator.GetCarInfo(regNum)
 		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
-
-			s.log.Infof("err creating new request: %v", err)
-			return err
-		}
-
-		params := url.Values{}
-		params.Add("regNum", regNum)
-
-		req.URL.RawQuery = params.Encode()
-
-		span.AddEvent("send request to external api")
-
-		resp, err := client.Do(req)
-
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
-
-			s.log.Infof("err send get info request: %v", err)
-			return err
-		}
-
-		defer resp.Body.Close()
-
-		span.AddEvent("check for http code")
-
-		if resp.StatusCode != http.StatusOK {
-			if resp.StatusCode == http.StatusNotFound {
-				return response.ErrNotFound
-			}
-			continue
-		}
-
-		span.AddEvent("decode response into struct")
-
-		var car domain.Car
-
-		err = json.NewDecoder(resp.Body).Decode(&car)
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
-
-			s.log.Infof("err decode response: %v", err)
 			return err
 		}
 
@@ -110,6 +67,7 @@ func (s *Service) CreateCar(ctx context.Context, input domain.CreateCarsRequest)
 
 	span.AddEvent("call postgres repo")
 	err := s.repo.CreateCars(ctx, cars)
+
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -119,13 +77,11 @@ func (s *Service) CreateCar(ctx context.Context, input domain.CreateCarsRequest)
 	}
 
 	span.AddEvent("clear redis cache")
-
 	if err = s.cache.DeleteCarList(ctx); err != nil {
 		s.log.Infof("cannot clear cache: %v", err)
 	}
 
 	s.log.Debugf("cleared cars cache")
-
 	return err
 }
 

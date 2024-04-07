@@ -13,6 +13,7 @@ import (
 	"strconv"
 )
 
+//go:generate go run github.com/vektra/mockery/v2@v2.42.2 --name=Service
 type Service interface {
 	CreateCar(ctx context.Context, input domain.CreateCarsRequest) error
 	GetCars(ctx context.Context, input domain.GetCarsRequest) (models.CarList, error)
@@ -37,7 +38,7 @@ func (h *Handler) CreateCar(c *gin.Context) {
 	var input domain.CreateCarsRequest
 
 	if err := request.Read(c, &input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": err,
 		})
 		return
@@ -47,7 +48,7 @@ func (h *Handler) CreateCar(c *gin.Context) {
 	if err != nil {
 
 		h.log.Infof("error while creating car: %v", err)
-		response.WithHTTPError(c, err)
+		response.MapHTTPError(err)
 		return
 	}
 

@@ -45,3 +45,18 @@ func NewLogger(cfg *config.Config) *zap.SugaredLogger {
 
 	return log.Sugar()
 }
+
+func NewMockLogger() *zap.SugaredLogger {
+	var log *zap.Logger
+
+	log, _ = zap.Config{
+		Encoding:         "console",
+		OutputPaths:      nil,
+		ErrorOutputPaths: nil,
+		Level:            zap.NewAtomicLevelAt(zapcore.DebugLevel),
+	}.Build()
+
+	defer log.Sync()
+
+	return log.Sugar()
+}

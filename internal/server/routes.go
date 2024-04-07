@@ -8,6 +8,7 @@ import (
 	"github.com/Verce11o/effective-mobile-test/internal/cars/repository"
 	"github.com/Verce11o/effective-mobile-test/internal/cars/service"
 	"github.com/Verce11o/effective-mobile-test/internal/config"
+	"github.com/Verce11o/effective-mobile-test/internal/lib/communicator"
 	"github.com/Verce11o/effective-mobile-test/internal/lib/tracer"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -58,7 +59,8 @@ func (s *Server) InitRoutes() *gin.Engine {
 	carRepo := repository.NewCarRepository(s.db, s.tracer.Tracer)
 	carCache := repository.NewCarCacheRepository(s.redis, s.tracer.Tracer)
 
-	carService := service.NewService(s.log, carRepo, carCache, s.tracer.Tracer, s.cfg.ExternalCarsApi.URL)
+	carCommunicator := communicator.NewCommunicator(s.cfg.ExternalCarsApi.URL)
+	carService := service.NewService(s.log, carRepo, carCache, s.tracer.Tracer, carCommunicator)
 	carHandler := handler.NewHandler(s.log, carService, s.tracer.Tracer)
 
 	api := router.Group("/api/v1")

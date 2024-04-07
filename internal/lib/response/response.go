@@ -10,6 +10,7 @@ import (
 var (
 	ErrInvalidRequest = errors.New("invalid request")
 	ErrNotFound       = errors.New("not found")
+	ErrGettingCarInfo = errors.New("error getting car info")
 )
 
 func MapHTTPError(err error) (int, string) {
@@ -20,6 +21,8 @@ func MapHTTPError(err error) (int, string) {
 		return http.StatusNotFound, "not found"
 	case errors.Is(err, pgx.ErrNoRows):
 		return http.StatusNotFound, "not found"
+	case errors.Is(err, ErrGettingCarInfo):
+		return http.StatusBadRequest, "error getting car info"
 	}
 
 	return http.StatusInternalServerError, "server error"
@@ -31,5 +34,4 @@ func WithHTTPError(c *gin.Context, err error) {
 	c.JSON(status, gin.H{
 		"message": message,
 	})
-	return
 }

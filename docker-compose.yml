@@ -1,0 +1,49 @@
+version: '3.8'
+services:
+  effective-backend:
+    build:
+      context: .
+    image: effective:latest
+    ports:
+      - "3010:3010"
+    networks:
+      - backend-network
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - redis
+      - jaeger
+
+
+
+  postgres:
+    container_name: effective_postgres
+    image: postgres:latest
+    environment:
+      - "POSTGRES_PASSWORD=password"
+    ports:
+      - "5432:5432"
+    networks:
+      - backend-network
+
+  redis:
+    container_name: effective_redis
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - backend-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    environment:
+      COLLECTOR_OTLP_ENABLED: true
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+
+networks:
+  backend-network:
+    driver: bridge

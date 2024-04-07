@@ -2,7 +2,6 @@ package config
 
 import (
 	"github.com/ilyakaznacheev/cleanenv"
-	"github.com/joho/godotenv"
 	"log"
 )
 
@@ -48,12 +47,7 @@ type Redis struct {
 func Load() *Config {
 	var cfg Config
 
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("error loading .env file")
-	}
-
-	err = cleanenv.ReadEnv(&cfg)
+	err := cleanenv.ReadEnv(&cfg)
 
 	if err != nil {
 		log.Fatalf("error while read config: %v", err)

@@ -68,6 +68,23 @@ func (h *Handler) CreateCar(c *gin.Context) {
 	})
 }
 
+// GetCars godoc
+// @Summary Get cars
+// @Description Get cars with provided params
+// @Tags cars
+// @Accept  json
+// @Produce  json
+// @Param   mark query string false "Car mark"
+// @Param   model query string false "Car model"
+// @Param   year query int false "Car year"
+// @Param   regNum query string false "Car regnum"
+// @Param   cursor query string false "Cursor"
+// @Param   owner_id query int false "Owner id"
+// @Success 200 {object} models.CarList
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /cars [get]
 func (h *Handler) GetCars(c *gin.Context) {
 	ctx, span := h.tracer.Start(c.Request.Context(), "carHandler.GetCars")
 	defer span.End()
@@ -93,6 +110,19 @@ func (h *Handler) GetCars(c *gin.Context) {
 
 }
 
+// UpdateCar godoc
+// @Summary Update car
+// @Description Update car by id
+// @Tags cars
+// @Accept  json
+// @Produce  json
+// @Param   id query int true "Car ID"
+// @Param   car body domain.UpdateCarsRequest true "Update Car Request"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /cars [put]
 func (h *Handler) UpdateCar(c *gin.Context) {
 	ctx, span := h.tracer.Start(c.Request.Context(), "carHandler.UpdateCar")
 	defer span.End()
@@ -135,6 +165,17 @@ func (h *Handler) UpdateCar(c *gin.Context) {
 
 }
 
+// DeleteCar godoc
+// @Summary Delete car
+// @Description Delete car by ID
+// @Tags cars
+// @Accept  json
+// @Produce  json
+// @Param   id query int true "Car ID"
+// @Success 200 {string} string "OK"
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /cars [delete]
 func (h *Handler) DeleteCar(c *gin.Context) {
 	ctx, span := h.tracer.Start(c.Request.Context(), "carHandler.DeleteCar")
 	defer span.End()

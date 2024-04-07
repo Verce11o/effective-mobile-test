@@ -1,0 +1,240 @@
+basePath: /api/v1
+definitions:
+  domain.CreateCarsRequest:
+    properties:
+      regNums:
+        items:
+          type: string
+        type: array
+    required:
+    - regNums
+    type: object
+  domain.UpdateCarsRequest:
+    properties:
+      mark:
+        type: string
+      model:
+        type: string
+      regNum:
+        type: string
+      year:
+        type: integer
+    type: object
+  models.Car:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      mark:
+        type: string
+      model:
+        type: string
+      owner:
+        $ref: '#/definitions/models.People'
+      regNum:
+        type: string
+      year:
+        type: integer
+    type: object
+  models.CarList:
+    properties:
+      cars:
+        items:
+          $ref: '#/definitions/models.Car'
+        type: array
+      cursor:
+        type: string
+      total:
+        type: integer
+    type: object
+  models.People:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      patronymic:
+        type: string
+      surname:
+        type: string
+    type: object
+host: localhost:3010
+info:
+  contact: {}
+  description: CRUD Cars service
+  title: EffectiveMobile Test API
+  version: "1.0"
+paths:
+  /cars:
+    delete:
+      consumes:
+      - application/json
+      description: Delete car by ID
+      parameters:
+      - description: Car ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete car
+      tags:
+      - cars
+    get:
+      consumes:
+      - application/json
+      description: Get cars with provided params
+      parameters:
+      - description: Car mark
+        in: query
+        name: mark
+        type: string
+      - description: Car model
+        in: query
+        name: model
+        type: string
+      - description: Car year
+        in: query
+        name: year
+        type: integer
+      - description: Car regnum
+        in: query
+        name: regNum
+        type: string
+      - description: Cursor
+        in: query
+        name: cursor
+        type: string
+      - description: Owner id
+        in: query
+        name: owner_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.CarList'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get cars
+      tags:
+      - cars
+    post:
+      consumes:
+      - application/json
+      description: Create new cars with provided regnums
+      parameters:
+      - description: Create Cars Request
+        in: body
+        name: cars
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CreateCarsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create new cars
+      tags:
+      - cars
+    put:
+      consumes:
+      - application/json
+      description: Update car by id
+      parameters:
+      - description: Car ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: Update Car Request
+        in: body
+        name: car
+        required: true
+        schema:
+          $ref: '#/definitions/domain.UpdateCarsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update car
+      tags:
+      - cars
+swagger: "2.0"

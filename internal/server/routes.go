@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/gob"
 	"fmt"
+	_ "github.com/Verce11o/effective-mobile-test/docs"
 	"github.com/Verce11o/effective-mobile-test/internal/cars/handler"
 	"github.com/Verce11o/effective-mobile-test/internal/cars/repository"
 	"github.com/Verce11o/effective-mobile-test/internal/cars/service"
@@ -14,6 +15,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.uber.org/zap"
 	"net/http"
 	"time"
@@ -50,11 +53,11 @@ func (s *Server) InitRoutes() *gin.Engine {
 	gob.Register(map[string]interface{}{})
 
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"https://localhost"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
-		AllowHeaders:     []string{"Content-Type", "Authorization"},
-		AllowCredentials: true,
+		AllowAllOrigins: true,
+		AllowMethods:    []string{"GET", "POST", "PUT", "DELETE"},
 	}))
+
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
 	carRepo := repository.NewCarRepository(s.db, s.tracer.Tracer)
 	carCache := repository.NewCarCacheRepository(s.redis, s.tracer.Tracer)

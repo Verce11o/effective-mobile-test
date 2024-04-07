@@ -19,7 +19,7 @@ func NewCommunicator(apiEndpoint string) *Communicator {
 func (c *Communicator) GetCarInfo(regNum string) (domain.Car, error) {
 	client := http.Client{Timeout: 3 * time.Second}
 
-	resp, err := client.Get(c.apiEndpoint + "/info?regNum" + regNum)
+	resp, err := client.Get(c.apiEndpoint + "/info?regNum=" + regNum)
 
 	if err != nil {
 		return domain.Car{}, err

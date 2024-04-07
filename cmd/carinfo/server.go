@@ -15,7 +15,7 @@ type ExternalApiHandler struct {
 func NewExternalApiHandler() *ExternalApiHandler {
 	cars := make([]Car, 10)
 	// fill with random data
-	for i, _ := range cars {
+	for i := range cars {
 		patronymic := patronymics[i]
 		year := years[i]
 
@@ -54,7 +54,7 @@ func (h *ExternalApiHandler) GetInfo(w http.ResponseWriter, r *http.Request, par
 	car := findCar(params.RegNum)
 
 	if car == nil {
-		http.Error(w, "Bad request", http.StatusBadRequest) // should be 404, but it's not described in the spec
+		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
 

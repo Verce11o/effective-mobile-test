@@ -9,7 +9,6 @@ import (
 	"github.com/Verce11o/effective-mobile-test/internal/models"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"time"
 )
 
 const (
@@ -51,12 +50,12 @@ func (c *CarRepository) CreateCars(ctx context.Context, input []domain.Car) erro
 }
 
 func (c *CarRepository) GetCars(ctx context.Context, input domain.GetCarsRequest) (domain.CarList, error) {
-	var createdAt time.Time
+
 	var id int
 	var err error
 
 	if input.Cursor != "" {
-		_, id, err = pagination.DecodeCursor(input.Cursor)
+		id, err = pagination.DecodeCursor(input.Cursor)
 
 		if err != nil {
 			return domain.CarList{}, err
@@ -69,10 +68,6 @@ func (c *CarRepository) GetCars(ctx context.Context, input domain.GetCarsRequest
 
 	if id != 0 {
 		query = query.Where(sq.Gt{"cars.id": id})
-	}
-
-	if !createdAt.IsZero() {
-		query = query.Where(sq.GtOrEq{"cars.created_at": createdAt})
 	}
 
 	if input.RegNum != "" {
@@ -126,7 +121,7 @@ func (c *CarRepository) GetCars(ctx context.Context, input domain.GetCarsRequest
 
 	if len(cars) > 0 {
 		last := cars[len(cars)-1]
-		nextCursor = pagination.EncodeCursor(last.CreatedAt, last.ID)
+		nextCursor = pagination.EncodeCursor(last.ID)
 
 	}
 	return domain.CarList{
@@ -145,6 +140,19 @@ func (c *CarRepository) UpdateCar(ctx context.Context, carID int, input domain.U
 	}
 
 	defer tx.Rollback(ctx)
+
+	var exists bool
+	findCar := `SELECT EXISTS(SELECT 1 FROM cars WHERE id = $1)`
+
+	err = tx.QueryRow(ctx, findCar, carID).Scan(&exists)
+
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		return pgx.ErrNoRows
+	}
 
 	q := `UPDATE cars SET reg_num = COALESCE(NULLIF($1, ''), reg_num),
                 mark = COALESCE(NULLIF($2, ''), mark),

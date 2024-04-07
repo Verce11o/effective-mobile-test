@@ -23,7 +23,7 @@ func Run(log *zap.SugaredLogger, cfg *config.Config) {
 	redisClient := redis.NewRedisClient(cfg)
 	defer redisClient.Close()
 
-	srv := server.NewServer(log, db, cfg)
+	srv := server.NewServer(log, db, redisClient, cfg)
 
 	go func() {
 		if err := carinfo.Run(log, "localhost:3009"); err != nil {

@@ -11,6 +11,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 	"net/http"
 	"time"
@@ -19,12 +20,13 @@ import (
 type Server struct {
 	log        *zap.SugaredLogger
 	db         *pgxpool.Pool
+	redis      *redis.Client
 	cfg        *config.Config
 	httpServer *http.Server
 }
 
-func NewServer(log *zap.SugaredLogger, db *pgxpool.Pool, cfg *config.Config) *Server {
-	return &Server{log: log, db: db, cfg: cfg}
+func NewServer(log *zap.SugaredLogger, db *pgxpool.Pool, redis *redis.Client, cfg *config.Config) *Server {
+	return &Server{log: log, db: db, redis: redis, cfg: cfg}
 }
 
 func (s *Server) Run(handler http.Handler) error {
@@ -52,7 +54,9 @@ func (s *Server) InitRoutes() *gin.Engine {
 	}))
 
 	carRepo := repository.NewCarRepository(s.db)
-	carService := service.NewService(s.log, carRepo, s.cfg.ExternalCarsApi.URL)
+	carCache := repository.NewCarCacheRepository(s.redis)
+
+	carService := service.NewService(s.log, carRepo, carCache, s.cfg.ExternalCarsApi.URL)
 	carHandler := handler.NewHandler(s.log, carService)
 
 	api := router.Group("/api/v1")

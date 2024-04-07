@@ -3,6 +3,7 @@ package response
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 	"net/http"
 )
 
@@ -16,6 +17,8 @@ func MapHTTPError(err error) (int, string) {
 	case errors.Is(err, ErrInvalidRequest):
 		return http.StatusBadRequest, "bad request"
 	case errors.Is(err, ErrNotFound):
+		return http.StatusNotFound, "not found"
+	case errors.Is(err, pgx.ErrNoRows):
 		return http.StatusNotFound, "not found"
 	}
 

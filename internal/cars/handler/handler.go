@@ -31,6 +31,17 @@ func NewHandler(log *zap.SugaredLogger, service Service, tracer trace.Tracer) *H
 	return &Handler{log: log, service: service, tracer: tracer}
 }
 
+// CreateCars godoc
+// @Summary Create new cars
+// @Description Create new cars with provided regnums
+// @Tags cars
+// @Accept  json
+// @Produce  json
+// @Param   cars body domain.CreateCarsRequest true "Create Cars Request"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /cars [post]
 func (h *Handler) CreateCar(c *gin.Context) {
 	ctx, span := h.tracer.Start(c.Request.Context(), "carHandler.CreateCar")
 	defer span.End()
@@ -38,7 +49,7 @@ func (h *Handler) CreateCar(c *gin.Context) {
 	var input domain.CreateCarsRequest
 
 	if err := request.Read(c, &input); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"message": err,
 		})
 		return
@@ -48,7 +59,7 @@ func (h *Handler) CreateCar(c *gin.Context) {
 	if err != nil {
 
 		h.log.Infof("error while creating car: %v", err)
-		response.MapHTTPError(err)
+		response.WithHTTPError(c, err)
 		return
 	}
 

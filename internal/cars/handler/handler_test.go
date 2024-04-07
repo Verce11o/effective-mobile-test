@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/Verce11o/effective-mobile-test/internal/cars/handler/mocks"
 	"github.com/Verce11o/effective-mobile-test/internal/lib/logger"
+	"github.com/Verce11o/effective-mobile-test/internal/lib/response"
 	"github.com/Verce11o/effective-mobile-test/internal/lib/tracer"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -34,6 +35,25 @@ func TestHandler_CreateCar(t *testing.T) {
 			},
 			statusCode: http.StatusOK,
 		},
+		{
+			name: "empty reg nums",
+			args: args{
+				input: map[string]any{
+					"regNums": []string{},
+				},
+			},
+			statusCode: http.StatusBadRequest,
+		},
+		{
+			name: "invalid reg nums",
+			args: args{
+				input: map[string]any{
+					"regNums": []string{"hello world"},
+				},
+			},
+			statusCode: http.StatusBadRequest,
+			wantErr:    response.ErrGettingCarInfo,
+		},
 	}
 
 	log := logger.NewMockLogger()
@@ -57,10 +77,9 @@ func TestHandler_CreateCar(t *testing.T) {
 				tracer:  tracer.InitTracer(ctx.Request.Context(), "", ""),
 			}
 
-			serviceMock.On("CreateCar", mock.Anything, mock.AnythingOfType("domain.CreateCarsRequest")).Return(nil)
+			serviceMock.On("CreateCar", mock.Anything, mock.AnythingOfType("domain.CreateCarsRequest")).Return(tt.wantErr).Maybe()
 			h.CreateCar(ctx)
 
-			//
 			assert.EqualValues(t, tt.statusCode, w.Code)
 		})
 	}

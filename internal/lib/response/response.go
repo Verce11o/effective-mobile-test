@@ -34,4 +34,5 @@ func WithHTTPError(c *gin.Context, err error) {
 	c.JSON(status, gin.H{
 		"message": message,
 	})
+	return
 }

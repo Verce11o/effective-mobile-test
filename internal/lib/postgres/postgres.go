@@ -17,7 +17,7 @@ func New(ctx context.Context, cfg *config.Config) *pgxpool.Pool {
 	}
 
 	if err := db.Ping(ctx); err != nil {
-		log.Fatal("Error connecting to database: ", err)
+		log.Fatal("Ping error connecting to database: ", err)
 	}
 
 	return db
